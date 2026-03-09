@@ -213,6 +213,6 @@ if __name__ == "__main__":
     import uvicorn
     print("\n" + "="*50, flush=True)
     print("SERVERS STARTING - NUTRI APP BACKEND READY", flush=True)
-    print("PORT: 8003", flush=True)
+    print("PORT: 8000", flush=True)
     print("="*50 + "\n", flush=True)
-    uvicorn.run(app, host="0.0.0.0", port=8003)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
