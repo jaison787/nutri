@@ -1,16 +1,122 @@
 {
-  "pizza": { "calories": 266, "protein": "11g", "carbs": "33g", "fat": "10g" },
-  "hamburger": { "calories": 295, "protein": "14g", "carbs": "24g", "fat": "14g" },
-  "hotdog": { "calories": 290, "protein": "10g", "carbs": "18g", "fat": "26g" },
-  "hot dog": { "calories": 290, "protein": "10g", "carbs": "18g", "fat": "26g" },
-  "ice cream": { "calories": 207, "protein": "3.5g", "carbs": "24g", "fat": "11g" },
-  "banana": { "calories": 89, "protein": "1.1g", "carbs": "23g", "fat": "0.3g" },
-  "apple": { "calories": 52, "protein": "0.3g", "carbs": "14g", "fat": "0.2g" },
-  "granny smith": { "calories": 52, "protein": "0.3g", "carbs": "14g", "fat": "0.2g" },
-  "orange": { "calories": 47, "protein": "0.9g", "carbs": "12g", "fat": "0.1g" },
-  "strawberry": { "calories": 32, "protein": "0.7g", "carbs": "7.7g", "fat": "0.3g" },
-  "broccoli": { "calories": 34, "protein": "2.8g", "carbs": "6.6g", "fat": "0.4g" },
-  "carrot": { "calories": 41, "protein": "0.9g", "carbs": "10g", "fat": "0.2g" },
-  "french fries": { "calories": 312, "protein": "3.4g", "carbs": "41g", "fat": "15g" },
-  "cheeseburger": { "calories": 303, "protein": "15g", "carbs": "30g", "fat": "14g" }
+  "pizza": {
+    "calories": 266,
+    "protein": "11g",
+    "carbs": "33g",
+    "fat": "10g"
+  },
+  "hamburger": {
+    "calories": 295,
+    "protein": "14g",
+    "carbs": "24g",
+    "fat": "14g"
+  },
+  "hotdog": {
+    "calories": 290,
+    "protein": "10g",
+    "carbs": "18g",
+    "fat": "26g"
+  },
+  "hot dog": {
+    "calories": 290,
+    "protein": "10g",
+    "carbs": "18g",
+    "fat": "26g"
+  },
+  "ice cream": {
+    "calories": 207,
+    "protein": "3.5g",
+    "carbs": "24g",
+    "fat": "11g"
+  },
+  "banana": {
+    "calories": 89,
+    "protein": "1.1g",
+    "carbs": "23g",
+    "fat": "0.3g"
+  },
+  "apple": {
+    "calories": 52,
+    "protein": "0.3g",
+    "carbs": "14g",
+    "fat": "0.2g"
+  },
+  "granny smith": {
+    "calories": 52,
+    "protein": "0.3g",
+    "carbs": "14g",
+    "fat": "0.2g"
+  },
+  "orange": {
+    "calories": 47,
+    "protein": "0.9g",
+    "carbs": "12g",
+    "fat": "0.1g"
+  },
+  "strawberry": {
+    "calories": 32,
+    "protein": "0.7g",
+    "carbs": "7.7g",
+    "fat": "0.3g"
+  },
+  "broccoli": {
+    "calories": 34,
+    "protein": "2.8g",
+    "carbs": "6.6g",
+    "fat": "0.4g"
+  },
+  "carrot": {
+    "calories": 41,
+    "protein": "0.9g",
+    "carbs": "10g",
+    "fat": "0.2g"
+  },
+  "french fries": {
+    "calories": 312,
+    "protein": "3.4g",
+    "carbs": "41g",
+    "fat": "15g"
+  },
+  "cheeseburger": {
+    "calories": 303,
+    "protein": "15g",
+    "carbs": "30g",
+    "fat": "14g"
+  },
+  "pepsi": {
+    "calories": 150,
+    "protein": "0g",
+    "carbs": "41g",
+    "fat": "0g"
+  },
+  "cola": {
+    "calories": 140,
+    "protein": "0g",
+    "carbs": "39g",
+    "fat": "0g"
+  },
+  "soda": {
+    "calories": 140,
+    "protein": "0g",
+    "carbs": "39g",
+    "fat": "0g"
+  },
+  "salad": {
+    "calories": 150,
+    "protein": "3g",
+    "carbs": "10g",
+    "fat": "12g"
+  },
+  "garden salad": {
+    "calories": 120,
+    "protein": "2g",
+    "carbs": "8g",
+    "fat": "10g"
+  },
+  "chicken salad": {
+    "calories": 350,
+    "protein": "25g",
+    "carbs": "5g",
+    "fat": "25g"
+  }
 }

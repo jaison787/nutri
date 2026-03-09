@@ -9,22 +9,30 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 from PIL import Image
 from model.cnn_model import predict_food, CNN_AVAILABLE
+from nutrition_lookup import get_nutrition
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from absolute path
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 # Load predefined nutrition database
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 NUTRITION_DB = {}
 try:
-    with open("nutrition_db.json", "r") as f:
-        NUTRITION_DB = json.load(f)
+    db_path = os.path.join(BASE_DIR, "nutrition_db.json")
+    if os.path.exists(db_path):
+        with open(db_path, "r") as f:
+            NUTRITION_DB = json.load(f)
+            print(f"Loaded {len(NUTRITION_DB)} items from nutrition_db.json")
+    else:
+        print(f"Warning: nutrition_db.json not found at {db_path}")
 except Exception as e:
     print(f"Warning: Could not load local nutrition database: {e}")
 
 # Configure Gemini API
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key or api_key == "YOUR_GEMINI_API_KEY_HERE":
-    print("Warning: GEMINI_API_KEY is not set correctly in .env file.")
+    print(f"Warning: GEMINI_API_KEY not found in environment. Checking {os.path.join(BASE_DIR, '.env')}")
 
 genai.configure(api_key=api_key)
 
@@ -47,7 +55,10 @@ class FoodItem(BaseModel):
     fat: str
 
 class NutritionResponse(BaseModel):
-    foods: List[FoodItem]
+    foods: List[FoodItem] = []
+    source: str = "Unknown"
+    confidence: float = 0.0
+    error: str = None
 
 @app.get("/")
 async def root():
@@ -65,42 +76,68 @@ async def analyze_food(image: UploadFile = File(...)):
         pil_image = Image.open(io.BytesIO(image_data))
 
         # --- 1. LOCAL CNN MODEL PREDICTION & PREDEFINED DATABASE LOOKUP ---
+        cnn_pred, confidence = None, 0.0
         if CNN_AVAILABLE:
             cnn_pred, confidence = predict_food(pil_image)
-            print(f"CNN Model predicted: '{cnn_pred}' with confidence {confidence:.2f}")
+            print(f"CNN Model predicted: '{cnn_pred}' with confidence {confidence:.2f}", flush=True)
             
-            # If CNN is confident and we have the food in our predefined database
-            if confidence > 0.35 and cnn_pred and cnn_pred in NUTRITION_DB:
-                print(f"Found '{cnn_pred}' in local database. Serving predefined nutrition values.")
-                data = NUTRITION_DB[cnn_pred]
-                return {
-                    "foods": [
-                        {
-                            "name": cnn_pred.title(),
-                            "calories": data["calories"],
-                            "protein": data["protein"],
-                            "carbs": data["carbs"],
-                            "fat": data["fat"]
-                        }
-                    ]
-                }
+            # --- HYBRID AI LOGIC: Only trust CNN if confidence is high (e.g. >= 0.6) ---
+            if confidence >= 0.6 and cnn_pred:
+                # 1. Check manual JSON database
+                if cnn_pred in NUTRITION_DB:
+                    print(f"High confidence match found in local JSON database: '{cnn_pred}'", flush=True)
+                    data = NUTRITION_DB[cnn_pred]
+                    return {
+                        "foods": [
+                            {
+                                "name": cnn_pred.title(),
+                                "calories": data["calories"],
+                                "protein": data["protein"],
+                                "carbs": data["carbs"],
+                                "fat": data["fat"]
+                            }
+                        ],
+                        "source": "Local CNN + JSON DB",
+                        "confidence": confidence
+                    }
+                
+                # 2. Check CSV database
+                print(f"Searching CSV database for high-confidence match: '{cnn_pred}'...")
+                csv_data = get_nutrition(cnn_pred)
+                if csv_data:
+                    print(f"Found '{cnn_pred}' in CSV database: {csv_data['name']}")
+                    return {
+                        "foods": [
+                            {
+                                "name": csv_data["name"],
+                                "calories": csv_data["calories"],
+                                "protein": csv_data["protein"],
+                                "carbs": csv_data["carbs"],
+                                "fat": csv_data["fat"]
+                            }
+                        ],
+                        "source": "Local CNN + CSV Lookup",
+                        "confidence": confidence
+                    }
+                else:
+                    print(f"'{cnn_pred}' not found in CSV database even with high confidence.", flush=True)
         
-        print("CNN confidence too low or item not in local DB. Falling back to Gemini AI...")
-
         # --- 2. AI FALLBACK (GEMINI) ---
-        # Try different model names that are confirmed to work
-        available_models = ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash']
+        # Triggered if CNN confidence is low (< 0.6) or not found in databases
+        reason = "Low Confidence" if (confidence or 0) < 0.6 else "Not in database"
+        print(f"Falling back to Gemini AI Vision (Reason: {reason}, Prediction='{cnn_pred if cnn_pred else 'N/A'}', Confidence={confidence:.2f})", flush=True)
+
+        # Try different model names that are confirmed to work in 2026
+        available_models = [
+            'models/gemini-2.5-flash',
+            'models/gemini-2.0-flash',
+            'models/gemini-pro-latest',
+            'models/gemini-flash-latest'
+        ]
         model = None
-        for model_name in available_models:
-            try:
-                model = genai.GenerativeModel(model_name)
-                # Check if it exists by doing a dry run or just proceeding
-                break
-            except Exception:
-                continue
         
-        if not model:
-            raise HTTPException(status_code=500, detail="No suitable Gemini model found.")
+        if not api_key:
+             raise HTTPException(status_code=500, detail="Gemini API Key missing.")
 
         # Construct Prompt
         prompt = """
@@ -122,10 +159,36 @@ async def analyze_food(image: UploadFile = File(...)):
         Do not include any other text or markdown formatting markers like ```json.
         """
 
-        # Generate content
-        response = model.generate_content([prompt, pil_image])
+        for model_name in available_models:
+            print(f"Attempting to use Gemini model: {model_name}...", flush=True)
+            try:
+                model = genai.GenerativeModel(model_name)
+                # Test connectivity/existence with a simple prompt
+                response = model.generate_content([prompt, pil_image])
+                print(f"Successfully used {model_name}", flush=True)
+                break
+            except Exception as e:
+                print(f"Error with {model_name}: {e}", flush=True)
+                model = None
+                continue
         
-        # Parse response text to JSON
+        if not model:
+            # Check if it was an API key error
+            error_msg = "All Gemini model attempts failed."
+            if not api_key:
+                error_msg += " API Key is missing or invalid."
+            else:
+                error_msg += " This usually means the API key is invalid, quota is exceeded, or the model is unavailable."
+            
+            # Instead of just raising, return a helpful error
+            return {
+                "foods": [],
+                "error": error_msg,
+                "source": "AI Fallback Failed",
+                "confidence": 0.0
+            }
+
+        # --- 3. PARSE RESPONSE ---
         try:
             # Clean response text in case it contains markdown code blocks
             res_text = response.text.strip()
@@ -148,4 +211,8 @@ async def analyze_food(image: UploadFile = File(...)):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    print("\n" + "="*50, flush=True)
+    print("SERVERS STARTING - NUTRI APP BACKEND READY", flush=True)
+    print("PORT: 8003", flush=True)
+    print("="*50 + "\n", flush=True)
+    uvicorn.run(app, host="0.0.0.0", port=8003)
